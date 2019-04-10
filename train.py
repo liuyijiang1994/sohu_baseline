@@ -116,7 +116,7 @@ def fit(model, training_iter, eval_iter, num_epoch, pbar, num_train_steps, verbo
             label_ids = label_ids[label_ids != -1]
             label_ids = label_ids.cpu()
 
-            train_acc, f1 = model.acc_f1(predicts, label_ids)
+            train_acc, f1 = model.acc_f1(predicts[:len(label_ids)], label_ids)
             pbar.show_process(train_acc, train_loss.item(), f1, time.time() - start, step)
 
         # -----------------------验证----------------------------
@@ -132,11 +132,10 @@ def fit(model, training_iter, eval_iter, num_epoch, pbar, num_train_steps, verbo
                 eval_los = model.loss_fn(bert_encode=bert_encode, tags=label_ids, output_mask=output_mask)
                 eval_loss = eval_los + eval_loss
                 count += 1
-                predicts = model.predict(bert_encode, output_mask)
-                y_predicts.append(predicts)
-
                 label_ids = label_ids.view(1, -1)
                 label_ids = label_ids[label_ids != -1]
+                predicts = model.predict(bert_encode, output_mask)
+                y_predicts.append(predicts[:len(label_ids)])
                 y_labels.append(label_ids)
 
             eval_predicted = torch.cat(y_predicts, dim=0).cpu()

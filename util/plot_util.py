@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-import config.args as config
+import args as config
 
 # 无图形界面需要加，否则plt报错
 plt.switch_backend('agg')

@@ -15,7 +15,7 @@ def init_params():
     if task_name not in processors:
         raise ValueError("Task not found: %s" % (task_name))
     processor = processors[task_name]()
-    tokenizer = BertTokenizer(vocab_file=args.VOCAB_FILE)
+    tokenizer = BertTokenizer.from_pretrained(args.bert_model, do_lower_case=args.do_lower_case)
     return processor, tokenizer
 
 

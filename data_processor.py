@@ -10,7 +10,7 @@ import operator
 logger = init_logger("bert_ner", logging_path=args.log_path)
 
 
-def train_val_split(X, y, valid_size=0.2, random_state=2018, shuffle=True):
+def train_val_split(X, y, valid_size=0.4, random_state=233, shuffle=True):
     """
     训练集验证集分割
     :param X: sentences
@@ -43,8 +43,8 @@ def sent2char(line):
     :param line: 原始行
     :return: 单词， 标签
     """
-    res = line.strip('\n').split()
-    return res
+    res = line.strip()
+    return list(res)
 
 
 def bulid_vocab(vocab_size, min_freq=1, stop_word_list=None):
@@ -92,19 +92,21 @@ def produce_data(custom_vocab=False, stop_word_list=None, vocab_size=None):
     with open(os.path.join(args.ROOT_DIR, args.RAW_SOURCE_DATA), 'r') as fr_1, \
             open(os.path.join(args.ROOT_DIR, args.RAW_TARGET_DATA), 'r') as fr_2:
         for sent, target in tqdm(zip(fr_1, fr_2), desc='text_to_id'):
+
             chars = sent2char(sent)
             label = sent2char(target)
 
             targets.append(label)
             sentences.append(chars)
+
             if custom_vocab:
                 bulid_vocab(vocab_size, stop_word_list)
     train, valid = train_val_split(sentences, targets)
 
     with open(args.TRAIN, 'w') as fw:
         for sent, label in train:
-            sent = ' '.join([str(w) for w in sent])
-            label = ' '.join([str(l) for l in label])
+            sent = ''.join([str(w) for w in sent])
+            label = ''.join([str(l) for l in label])
             df = {"source": sent, "target": label}
             encode_json = json.dumps(df)
             print(encode_json, file=fw)
@@ -112,8 +114,8 @@ def produce_data(custom_vocab=False, stop_word_list=None, vocab_size=None):
 
     with open(args.VALID, 'w') as fw:
         for sent, label in valid:
-            sent = ' '.join([str(w) for w in sent])
-            label = ' '.join([str(l) for l in label])
+            sent = ''.join([str(w) for w in sent])
+            label = ''.join([str(l) for l in label])
             df = {"source": sent, "target": label}
             encode_json = json.dumps(df)
             print(encode_json, file=fw)
@@ -179,7 +181,7 @@ class MyPro(DataProcessor):
             line = json.loads(line)
             text_a = line["source"]
             label = line["target"]
-            assert len(label.split()) == len(text_a.split())
+            assert len(list(label)) == len(list(text_a))
             example = InputExample(guid=guid, text_a=text_a, label=label)
             examples.append(example)
         return examples
@@ -213,7 +215,7 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
     features = []
     for ex_index, example in enumerate(examples):
         tokens_a = tokenizer.tokenize(example.text_a)
-        labels = example.label.split()
+        labels = list(example.label)
 
         if len(tokens_a) == 0 or len(labels) == 0:
             continue

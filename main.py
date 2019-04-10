@@ -15,7 +15,7 @@ def start():
 
     pbar = ProgressBar(epoch_size=epoch_size, batch_size=args.train_batch_size)
 
-    model = Bert_CRF.from_pretrained(args.bert_model,
+    model = Bert_CRF.from_pretrained(args.bert_model, cache_dir=args.bert_cache,
                                      num_tag=len(args.labels))
 
     for name, param in model.named_parameters():

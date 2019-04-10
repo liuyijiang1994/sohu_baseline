@@ -2,11 +2,10 @@ import torch.nn as nn
 from net.crf import CRF
 import numpy as np
 from sklearn.metrics import f1_score, classification_report
-import args
-from pytorch_pretrained_bert.modeling import PreTrainedBertModel, BertModel
+from pytorch_pretrained_bert.modeling import BertForPreTraining, BertModel
 
 
-class Bert_CRF(PreTrainedBertModel):
+class Bert_CRF(BertForPreTraining):
     def __init__(self,
                  config,
                  num_tag):
@@ -38,7 +37,7 @@ class Bert_CRF(PreTrainedBertModel):
     def predict(self, bert_encode, output_mask):
         predicts = self.crf.get_batch_best_path(bert_encode, output_mask)
         predicts = predicts.view(1, -1).squeeze()
-        predicts = predicts[predicts != -1]
+        # predicts = predicts[predicts != -1]
         return predicts
 
     def acc_f1(self, y_pred, y_true):
