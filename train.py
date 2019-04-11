@@ -88,9 +88,6 @@ def fit(model, training_iter, eval_iter, num_epoch, pbar, num_train_steps, verbo
         for step, batch in enumerate(training_iter):
             batch = tuple(t.to(device) for t in batch)
             input_ids, input_mask, segment_ids, label_ids, output_mask = batch
-            # print("input_id", input_ids)
-            # print("input_mask", input_mask)
-            # print("segment_id", segment_ids)
             bert_encode = model(input_ids, segment_ids, input_mask).cpu()
             train_loss = model.loss_fn(bert_encode=bert_encode, tags=label_ids, output_mask=output_mask)
 
@@ -112,11 +109,13 @@ def fit(model, training_iter, eval_iter, num_epoch, pbar, num_train_steps, verbo
                 global_step += 1
 
             predicts = model.predict(bert_encode, output_mask)
-            label_ids = label_ids.view(1, -1)
-            label_ids = label_ids[label_ids != -1]
-            label_ids = label_ids.cpu()
 
-            train_acc, f1 = model.acc_f1(predicts[:len(label_ids)], label_ids)
+            label_ids = label_ids.view(1, -1).squeeze().cpu()
+            predicts = predicts.view(1, -1).squeeze().cpu()
+            label_ids = label_ids[label_ids != -1]
+            predicts = predicts[predicts != -1]
+
+            train_acc, f1 = model.acc_f1(predicts, label_ids)
             pbar.show_process(train_acc, train_loss.item(), f1, time.time() - start, step)
 
         # -----------------------验证----------------------------
@@ -132,10 +131,14 @@ def fit(model, training_iter, eval_iter, num_epoch, pbar, num_train_steps, verbo
                 eval_los = model.loss_fn(bert_encode=bert_encode, tags=label_ids, output_mask=output_mask)
                 eval_loss = eval_los + eval_loss
                 count += 1
-                label_ids = label_ids.view(1, -1)
-                label_ids = label_ids[label_ids != -1]
                 predicts = model.predict(bert_encode, output_mask)
-                y_predicts.append(predicts[:len(label_ids)])
+
+                label_ids = label_ids.view(1, -1).squeeze()
+                predicts = predicts.view(1, -1).squeeze()
+                label_ids = label_ids[label_ids != -1]
+                predicts = predicts[predicts != -1]
+
+                y_predicts.append(predicts)
                 y_labels.append(label_ids)
 
             eval_predicted = torch.cat(y_predicts, dim=0).cpu()

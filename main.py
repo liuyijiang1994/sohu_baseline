@@ -15,12 +15,11 @@ def start():
 
     pbar = ProgressBar(epoch_size=epoch_size, batch_size=args.train_batch_size)
 
-    model = Bert_CRF.from_pretrained(args.bert_model, cache_dir=args.bert_cache,
-                                     num_tag=len(args.labels))
+    model = Bert_CRF()
 
-    for name, param in model.named_parameters():
-        if param.requires_grad:
-            print(name)
+    # for name, param in model.named_parameters():
+    #     if param.requires_grad:
+    #         print(name)
 
     fit(model=model,
         training_iter=train_iter,
