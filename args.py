@@ -1,5 +1,5 @@
 # -----------ARGS---------------------
-ROOT_DIR = "/root/liuyijiang/Bert_Chinese_Ner_pytorch/"
+ROOT_DIR = "/root/liuyijiang/liu/Bert_Chinese_Ner_pytorch/"
 RAW_SOURCE_DATA = "data/source.txt"
 RAW_TARGET_DATA = "data/target.txt"
 STOP_WORD_LIST = None
@@ -29,5 +29,5 @@ seed = 233
 gradient_accumulation_steps = 1
 fp16 = False
 loss_scale = 0.
-labels = ["B", "I", "O"]
+labels = ["B-entity", "I-entity", "O"]
 device = "cuda"
