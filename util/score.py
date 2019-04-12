@@ -116,8 +116,8 @@ def f1_score_BIEO(tar_path, pre_path, tag):
 
 if __name__ == "__main__":
     # BIO
-    tar_path = [[0, 1, 0, 0, 2, 1, 0, 1, 1, 2], [0, 1, 2, 2, 1, 0]]
-    pre_path = [[0, 1, 0, 0, 2, 1, 0, 1, 2], [0, 1, 2, 2, 1, 0]]
+    tar_path = [[0, 1, 0, 0, 2, 1, 0, 1, 1, 0, 0, 1, 0], [0, 1, 2, 2, 1, 0]]
+    pre_path = [[0, 1, 0, 0, 2, 1, 0, 1, 2, 0, 0, 1, 2], [0, 1, 2, 2, 1, 0]]
     tag = 'entity'
     print(f1_score_BIO(tar_path, pre_path, tag))
 

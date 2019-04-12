@@ -1,5 +1,5 @@
 # -----------ARGS---------------------
-ROOT_DIR = "/root/liuyijiang/liu/Bert_Chinese_Ner_pytorch/"
+ROOT_DIR = "/"
 RAW_SOURCE_DATA = "data/source.txt"
 RAW_TARGET_DATA = "data/target.txt"
 STOP_WORD_LIST = None
@@ -15,7 +15,7 @@ output_dir = "output/checkpoint"  # checkpoint和预测输出文件夹
 
 bert_model = "bert-base-chinese"  # BERT 预训练模型种类 bert-base-chinese
 task_name = "bert_ner"  # 训练任务名称
-bert_cache = '/root/.pytorch_pretrained_bert/distributed_-1'
+bert_cache = '/cache/distributed_-1'
 flag_words = ["[PAD]", "[CLP]", "[SEP]", "[UNK]"]
 max_seq_length = 190
 do_lower_case = True
