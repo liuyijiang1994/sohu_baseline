@@ -29,5 +29,5 @@ seed = 233
 gradient_accumulation_steps = 1
 fp16 = False
 loss_scale = 0.
-labels = ["B-entity", "I-entity", "O"]
+labels = ["S-entity", "B-entity", "I-entity", "E-entity", "O"]
 device = "cuda"

@@ -1,14 +1,17 @@
 import re
 import json
 import args
+import random
+
 from pytorch_pretrained_bert.tokenization import BertTokenizer
+
+random.seed(233)
 
 
 def load_data(data_file):
     stc_list = []
     label_list = []
-    source_file = open('data/source.txt', 'w', encoding='utf-8')
-    target_file = open('data/target.txt', 'w', encoding='utf-8')
+
     with open('data/entity.txt', 'w', encoding='utf-8') as w:
         with open(data_file, 'r', encoding='utf-8') as fin:
             for line in fin:
@@ -25,7 +28,7 @@ def load_data(data_file):
                 sentences = [title]
                 for seq in re.split(r'[\n。？！?!]', content):
                     seq = re.sub(r'^[^\u4e00-\u9fa5A-Za-z0-9]+', '', seq)
-                    if len(seq) > 0:
+                    if len(seq) <= 220:
                         sentences.append(seq)
 
                 for seq in sentences:
@@ -96,13 +99,11 @@ def load_data(data_file):
                             new_target.append(target[i])
                             i += 1
                     assert len(new_source) == len(new_target)
-                    for ns, nt in zip(new_source, new_target):
-                        print(ns, nt)
-                    print('---')
-                    source = ' '.join(new_source)
-                    target = ' '.join(new_target)
-                    source_file.write(source + '\n')
-                    target_file.write(target + '\n')
+
+                    # source = ' '.join(new_source)
+                    # target = ' '.join(new_target)
+                    # source_file.write(source + '\n')
+                    # target_file.write(target + '\n')
 
                     stc_list.append(new_source)
                     label_list.append(new_target)
@@ -112,20 +113,30 @@ def load_data(data_file):
                     #     label.append(en)
                     # stc.append('')
 
-        len_cont = {}  # label.append('')
         print(f'stc:{len(stc_list)}')
         print(f'label:{len(label_list)}')
-        for stc, label in zip(stc_list, label_list):
-            len_cont[len(stc)] = len_cont.get(len(stc), 0) + 1
-            if len(stc) <= 190:
-                out = [f'{s}\t{l}\n' for s, l in zip(stc, label)]
-                w.writelines(out)
-                w.write('\n')
 
-        len_cont = sorted(len_cont.items(), key=lambda x: x[0])
-        print(len_cont)
+        c = list(zip(stc_list, label_list))
+        random.shuffle(c)
+        stc_list[:], label_list[:] = zip(*c)
+        source_file = open('data/source.txt', 'w', encoding='utf-8')
+        target_file = open('data/target.txt', 'w', encoding='utf-8')
+
+        source_file.writelines([' '.join(source) + '\n' for source in stc_list])
+        target_file.writelines([' '.join(source) + '\n' for source in label_list])
+
         source_file.close()
         target_file.close()
+
+        # len_cont = {}  # label.append('')
+        # for stc, label in zip(stc_list, label_list):
+        #     len_cont[len(stc)] = len_cont.get(len(stc), 0) + 1
+        #     if len(stc) <= 220:
+        #         out = [f'{s}\t{l}\n' for s, l in zip(stc, label)]
+        #         w.writelines(out)
+        #         w.write('\n')
+        # len_cont = sorted(len_cont.items(), key=lambda x: x[0])
+        # print(len_cont)
 
 
 if __name__ == '__main__':
