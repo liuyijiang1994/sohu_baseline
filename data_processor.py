@@ -10,7 +10,7 @@ import operator
 logger = init_logger("bert_ner", logging_path=args.log_path)
 
 
-def train_val_split(X, y, valid_size=0.2, random_state=2018, shuffle=True):
+def train_val_split(X, y, valid_size=0.3, random_state=233, shuffle=True):
     """
     训练集验证集分割
     :param X: sentences
