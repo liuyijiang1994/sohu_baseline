@@ -7,15 +7,16 @@ from data_processor import produce_data
 
 
 def start():
-    produce_data()
+    # produce_data()
+
+    model = Bert_CRF()
+
     train_iter, num_train_steps = create_batch_iter("train")
     eval_iter = create_batch_iter("dev")
 
     epoch_size = num_train_steps * args.train_batch_size * args.gradient_accumulation_steps / args.num_train_epochs
 
     pbar = ProgressBar(epoch_size=epoch_size, batch_size=args.train_batch_size)
-
-    model = Bert_CRF()
 
     # for name, param in model.named_parameters():
     #     if param.requires_grad:

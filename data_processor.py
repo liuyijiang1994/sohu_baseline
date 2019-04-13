@@ -6,6 +6,7 @@ from tqdm import tqdm
 from util.Logginger import init_logger
 import args
 import operator
+import torch
 
 logger = init_logger("bert_ner", logging_path=args.log_path)
 
@@ -215,10 +216,9 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
     for ex_index, example in enumerate(examples):
         tokens_a = tokenizer.tokenize(example.text_a)
         labels = example.label.split()
-
         if len(tokens_a) == 0 or len(labels) == 0:
             continue
-        assert len(tokens_a) == len(labels)
+
         if len(tokens_a) > max_seq_length - 2:
             tokens_a = tokens_a[:(max_seq_length - 2)]
             labels = labels[:(max_seq_length - 2)]
@@ -253,6 +253,15 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
         output_mask = [0] + output_mask + [0]
         output_mask += padding
 
+        ot = torch.LongTensor(output_mask)
+        lt = torch.LongTensor(label_id)
+
+        if len(ot[ot == 1]) != len(lt[lt != -1]):
+            print(example.text_a)
+            print(tokens_a)
+            print(lt[lt != -1])
+        assert len(ot[ot == 1]) == len(lt[lt != -1])
+
         # ----------------处理后结果-------------------------
         # for example, in the case of max_seq_length=10:
         # raw_data:          春 秋 忽 代 谢le
@@ -266,8 +275,7 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
         if ex_index < 1:
             logger.info("-----------------Example-----------------")
             logger.info("guid: %s" % (example.guid))
-            logger.info("tokens: %s" % " ".join(
-                [str(x) for x in tokens]))
+            logger.info("tokens: %s" % " ".join([str(x) for x in tokens]))
             logger.info("input_ids: %s" % " ".join([str(x) for x in input_ids]))
             logger.info("input_mask: %s" % " ".join([str(x) for x in input_mask]))
             logger.info("label: %s " % " ".join([str(x) for x in label_id]))

@@ -1,3 +1,5 @@
+import torch
+
 BIO_tag_map = {'B-entity': 0, 'I-entity': 1, 'O': 2}
 BIEO_tag_map = {'B-entity': 0, 'I-entity': 1, 'E-entity': 2, 'O': 3}
 BIESO_tag_map = {'S-entity': 0, 'B-entity': 1, 'I-entity': 2, 'E-entity': 3, 'O': 4}
@@ -108,21 +110,35 @@ def f1_score(tar_path, pre_path, tag, type):
         elif type == "BIESO":
             tar_tags = get_tags_BIESO(tar, tag, BIESO_tag_map)
             pre_tags = get_tags_BIESO(pre, tag, BIESO_tag_map)
-        print(tar_tags)
-        print(pre_tags)
+        # print(tar_tags)
+        # print(pre_tags)
         origin += len(tar_tags)
         found += len(pre_tags)
 
         for p_tag in pre_tags:
             if p_tag in tar_tags:
                 right += 1
-    print(right)
-    print(origin)
-    print(found)
+    # print(right)
+    # print(origin)
+    # print(found)
     recall = 0. if origin == 0 else (right / origin)
     precision = 0. if found == 0 else (right / found)
     f1 = 0. if recall + precision == 0 else (2 * precision * recall) / (precision + recall)
     return precision, recall, f1
+
+
+def score_predict(label_tensor, predict_tensor, lable_type='BIESO'):
+    predict_list = []
+    label_list = []
+    tag = 'entity'
+    for x in range(label_tensor.shape[0]):
+        label = label_tensor[x]
+        predict = predict_tensor[x]
+        predict = predict[predict != -1].numpy().tolist()
+        label = label[label != -1].numpy().tolist()
+        predict_list.append(predict)
+        label_list.append(label)
+    return f1_score(label_list, predict_list, tag, lable_type)
 
 
 if __name__ == "__main__":
@@ -140,6 +156,15 @@ if __name__ == "__main__":
 
     # BIESO
     tar_path = [[0, 1, 3, 1, 4, 2, 3, 0, 4, 4, 0, 1, 2, 0, 4, 4], [1, 0, 1, 3, 2, 0, 1, 2, 3, 2, 4, 4]]
-    pre_path = [[0, 1, 2, 2, 3, 0, 4, 4, 0, 1, 2, 0, 4, 4], [1, 0, 1, 3, 2, 0, 1, 2, 3, 4, 4]]
+    pre_path = [[0, 1, 2, 2, 3, 0, 4, 4, 0, 1, 2, 0, 4, 4, 4, 4], [1, 0, 1, 3, 2, 0, 1, 2, 3, 4, 4, 4]]
     tag = 'entity'
     print(f1_score(tar_path, pre_path, tag, "BIESO"))
+
+    tar_path = torch.LongTensor(
+        [[0, 1, 3, 1, 4, 2, 3, 0, 4, 4, 0, 1, 2, 0, 4, 4, -1, -1],
+         [1, 0, 1, 3, 2, 0, 1, 2, 3, 2, 4, 4, -1, -1, -1, -1, -1, -1]])
+    pre_path = torch.LongTensor(
+        [[0, 1, 2, 2, 3, 0, 4, 4, 0, 1, 2, 0, 4, 4, 4, 4, -1, -1],
+         [1, 0, 1, 3, 2, 0, 1, 2, 3, 4, 4, 4, -1, -1, -1, -1, -1, -1]])
+
+    print(score_predict(tar_path, pre_path))

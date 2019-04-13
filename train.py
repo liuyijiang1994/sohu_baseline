@@ -7,6 +7,7 @@ from util.plot_util import loss_acc_plot
 from util.Logginger import init_logger
 
 from util.model_util import save_model, load_model
+from util.score import score_predict
 import warnings
 
 logger = init_logger("torch", logging_path=args.log_path)
@@ -110,13 +111,17 @@ def fit(model, training_iter, eval_iter, num_epoch, pbar, num_train_steps, verbo
 
             predicts = model.predict(bert_encode, output_mask)
 
+            predict_tensor = predicts.cpu()
+            label_tensor = label_ids.cpu()
+            precision, recall, f1 = score_predict(label_tensor, predict_tensor)
+
             label_ids = label_ids.view(1, -1).squeeze().cpu()
             predicts = predicts.view(1, -1).squeeze().cpu()
             label_ids = label_ids[label_ids != -1]
             predicts = predicts[predicts != -1]
 
             train_acc, f1 = model.acc_f1(predicts, label_ids)
-            pbar.show_process(train_acc, train_loss.item(), f1, time.time() - start, step)
+            pbar.show_process(train_acc, train_loss.item(), f1, precision, recall, f1, time.time() - start, step)
 
         # -----------------------验证----------------------------
         model.eval()
