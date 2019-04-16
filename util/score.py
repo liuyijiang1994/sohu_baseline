@@ -68,7 +68,7 @@ def get_tags_BIEO(path, tag, tag_map):
     return tags
 
 
-def get_tags_BIESO(path, tag, tag_map):
+def get_tags_BIESO(path, tag='entity', tag_map=BIESO_tag_map):
     begin_tag = tag_map.get("B-" + tag)
     mid_tag = tag_map.get("I-" + tag)
     end_tag = tag_map.get("E-" + tag)
@@ -157,6 +157,12 @@ if __name__ == "__main__":
     # BIESO
     tar_path = [[0, 1, 3, 1, 4, 2, 3, 0, 4, 4, 0, 1, 2, 0, 4, 4], [1, 0, 1, 3, 2, 0, 1, 2, 3, 2, 4, 4]]
     pre_path = [[0, 1, 2, 2, 3, 0, 4, 4, 0, 1, 2, 0, 4, 4, 4, 4], [1, 0, 1, 3, 2, 0, 1, 2, 3, 4, 4, 4]]
+    tag = 'entity'
+    print(f1_score(tar_path, pre_path, tag, "BIESO"))
+
+    # BIESO
+    tar_path = [[4, 0, 4, 4, 4, 4, 4], [4, 4, 4, 4, 4, 4, 4]]
+    pre_path = [[4, 0, 4, 4, 4, 4, 4], [4, 4, 4, 4, 4, 4, 4]]
     tag = 'entity'
     print(f1_score(tar_path, pre_path, tag, "BIESO"))
 

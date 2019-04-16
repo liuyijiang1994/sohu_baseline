@@ -14,5 +14,4 @@ def load_model(output_dir):
     # Load a trained model that you have fine-tuned
     output_model_file = os.path.join(output_dir, "pytorch_model.bin")
     model_state_dict = torch.load(output_model_file)
-    model = Bert_CRF.from_pretrained(args.bert_model, cache_dir=args.bert_cache, state_dict=model_state_dict)
-    return model
+    return model_state_dict

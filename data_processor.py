@@ -7,6 +7,7 @@ from util.Logginger import init_logger
 import args
 import operator
 import torch
+import copy
 
 logger = init_logger("bert_ner", logging_path=args.log_path)
 
@@ -87,38 +88,71 @@ def bulid_vocab(vocab_size, min_freq=1, stop_word_list=None):
     logger.info("Vocab.txt write down at {}".format(args.VOCAB_FILE))
 
 
-def produce_data(custom_vocab=False, stop_word_list=None, vocab_size=None):
+def make_data(in_path, out_path):
+    with open(in_path, 'r') as f:
+        seq = []
+        label = []
+        seq_list = []
+        label_list = []
+        k = 0
+        for line in f:
+            line = line.strip()
+            if len(line) == 0 and len(seq) != 0:
+                seq_list.append(copy.deepcopy(seq))
+                label_list.append(copy.deepcopy(label))
+                seq.clear()
+                label.clear()
+                if k % 1000 == 0:
+                    print(k)
+                k += 1
+            else:
+                item = line.split('\t')
+                seq.append(item[0])
+                label.append(item[1])
+
+        train_size = int(len(seq_list) * args.train_size)
+        train_data = {'seq': seq_list[:train_size], 'label': label_list[:train_size]}
+        valid_data = {'seq': seq_list[train_size:], 'label': label_list[train_size:]}
+        entity_torch_data = {'train': train_data, 'valid': valid_data}
+        torch.save(entity_torch_data, out_path)
+    return None
+
+
+def produce_data():
     """实际情况下，train和valid通常是需要自己划分的，这里将train和valid数据集划分好写入文件"""
-    targets, sentences = [], []
-    with open(os.path.join(args.ROOT_DIR, args.RAW_SOURCE_DATA), 'r') as fr_1, \
-            open(os.path.join(args.ROOT_DIR, args.RAW_TARGET_DATA), 'r') as fr_2:
-        for sent, target in tqdm(zip(fr_1, fr_2), desc='text_to_id'):
-            chars = sent2char(sent)
-            label = sent2char(target)
+    # targets, sentences = [], []
+    # with open(os.path.join(args.ROOT_DIR, args.RAW_SOURCE_DATA), 'r') as fr_1, \
+    #         open(os.path.join(args.ROOT_DIR, args.RAW_TARGET_DATA), 'r') as fr_2:
+    #     for sent, target in tqdm(zip(fr_1, fr_2), desc='text_to_id'):
+    #         chars = sent2char(sent)
+    #         label = sent2char(target)
+    #
+    #         targets.append(label)
+    #         sentences.append(chars)
+    #         if custom_vocab:
+    #             bulid_vocab(vocab_size, stop_word_list)
+    # train, valid = train_val_split(sentences, targets)
 
-            targets.append(label)
-            sentences.append(chars)
-            if custom_vocab:
-                bulid_vocab(vocab_size, stop_word_list)
-    train, valid = train_val_split(sentences, targets)
+    # with open(args.TRAIN, 'w') as fw:
+    #     for sent, label in train:
+    #         sent = ' '.join([str(w) for w in sent])
+    #         label = ' '.join([str(l) for l in label])
+    #         df = {"source": sent, "target": label}
+    #         encode_json = json.dumps(df)
+    #         print(encode_json, file=fw)
+    #     logger.info('Train set write done')
+    #
+    # with open(args.VALID, 'w') as fw:
+    #     for sent, label in valid:
+    #         sent = ' '.join([str(w) for w in sent])
+    #         label = ' '.join([str(l) for l in label])
+    #         df = {"source": sent, "target": label}
+    #         encode_json = json.dumps(df)
+    #         print(encode_json, file=fw)
+    #     logger.info('Dev set write done')
 
-    with open(args.TRAIN, 'w') as fw:
-        for sent, label in train:
-            sent = ' '.join([str(w) for w in sent])
-            label = ' '.join([str(l) for l in label])
-            df = {"source": sent, "target": label}
-            encode_json = json.dumps(df)
-            print(encode_json, file=fw)
-        logger.info('Train set write done')
-
-    with open(args.VALID, 'w') as fw:
-        for sent, label in valid:
-            sent = ' '.join([str(w) for w in sent])
-            label = ' '.join([str(l) for l in label])
-            df = {"source": sent, "target": label}
-            encode_json = json.dumps(df)
-            print(encode_json, file=fw)
-        logger.info('Dev set write done')
+    make_data(args.ENTITY_TAG_DATA, args.entity_torch_data)
+    make_data(args.NO_ENTITY_TAG_DATA, args.no_entity_torch_data)
 
 
 class InputExample(object):
@@ -148,11 +182,11 @@ class InputFeature(object):
 class DataProcessor(object):
     """数据预处理的基类，自定义的MyPro继承该类"""
 
-    def get_train_examples(self, data_dir):
-        """读取训练集 Gets a collection of `InputExample`s for the train set."""
+    def get_valid_examples(self, data_dir):
+        """读取验证集 Gets a collection of `InputExample`s for the dev set."""
         raise NotImplementedError()
 
-    def get_dev_examples(self, data_dir):
+    def get_train_examples(self, data_dir):
         """读取验证集 Gets a collection of `InputExample`s for the dev set."""
         raise NotImplementedError()
 
@@ -160,44 +194,39 @@ class DataProcessor(object):
         """读取标签 Gets the list of labels for this data set."""
         raise NotImplementedError()
 
-    @classmethod
-    def _read_json(cls, input_file):
-        with open(input_file, "r", encoding='utf-8') as fr:
-            lines = []
-            for line in fr:
-                _line = line.strip('\n')
-                lines.append(_line)
-            return lines
-
 
 class MyPro(DataProcessor):
     """将数据构造成example格式"""
 
-    def _create_example(self, lines, set_type):
-        examples = []
-        for i, line in enumerate(lines):
-            guid = "%s-%d" % (set_type, i)
-            line = json.loads(line)
-            text_a = line["source"]
-            label = line["target"]
+    def get_valid_examples(self):
+        valid_examples = self.make_example_list('valid')
+        return valid_examples
 
-            assert len(label.split()) == len(text_a.split())
-            example = InputExample(guid=guid, text_a=text_a, label=label)
-            examples.append(example)
-        return examples
-
-    def get_train_examples(self, data_dir):
-        lines = self._read_json(args.TRAIN)
-        examples = self._create_example(lines, "train")
-        return examples
-
-    def get_dev_examples(self, data_dir):
-        lines = self._read_json(args.VALID)
-        examples = self._create_example(lines, "dev")
-        return examples
+    def get_train_examples(self):
+        train_examples = self.make_example_list('train')
+        return train_examples
 
     def get_labels(self):
         return args.labels
+
+    def make_example_list(self, stage):
+        examples = []
+        data = torch.load(args.entity_torch_data)
+        train_data = data[stage]
+        for i, (seq, label) in enumerate(zip(train_data['seq'], train_data['label'])):
+            guid = "%s - %d" % (stage, i)
+            example = InputExample(guid=guid, text_a=seq, label=label)
+            examples.append(example)
+        return examples
+
+
+def convert_text_to_ids(text, tokenizer):
+    ids = []
+    for t in text:
+        if t not in tokenizer.vocab:
+            t = '[UNK]'
+        ids.append(tokenizer.vocab.get(t))
+    return ids
 
 
 def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer):
@@ -214,20 +243,23 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
 
     features = []
     for ex_index, example in enumerate(examples):
-        tokens_a = tokenizer.tokenize(example.text_a)
-        labels = example.label.split()
+        tokens_a = example.text_a
+        labels = example.label
+
         if len(tokens_a) == 0 or len(labels) == 0:
             continue
 
         if len(tokens_a) > max_seq_length - 2:
             tokens_a = tokens_a[:(max_seq_length - 2)]
             labels = labels[:(max_seq_length - 2)]
+
         # ----------------处理source--------------
         ## 句子首尾加入标示符
         tokens = ["[CLS]"] + tokens_a + ["[SEP]"]
         segment_ids = [0] * len(tokens)
         ## 词转换成数字
-        input_ids = tokenizer.convert_tokens_to_ids(tokens)
+
+        input_ids = convert_text_to_ids(tokens, tokenizer)
 
         input_mask = [1] * len(input_ids)
 
@@ -249,7 +281,7 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
 
         ## output_mask用来过滤bert输出中sub_word的输出,只保留单词的第一个输出(As recommended by jocob in his paper)
         ## 此外，也是为了适应crf
-        output_mask = [0 if sub_vocab.get(t) is not None else 1 for t in tokens_a]
+        output_mask = [1 for t in tokens_a]
         output_mask = [0] + output_mask + [0]
         output_mask += padding
 
@@ -257,9 +289,10 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
         lt = torch.LongTensor(label_id)
 
         if len(ot[ot == 1]) != len(lt[lt != -1]):
-            print(example.text_a)
             print(tokens_a)
+            print(ot[ot == 1])
             print(lt[lt != -1])
+            print(len(ot[ot == 1]), len(lt[lt != -1]))
         assert len(ot[ot == 1]) == len(lt[lt != -1])
 
         # ----------------处理后结果-------------------------
@@ -288,5 +321,4 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
                                label_id=label_id,
                                output_mask=output_mask)
         features.append(feature)
-
     return features

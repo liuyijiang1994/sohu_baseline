@@ -7,8 +7,9 @@ from util.plot_util import loss_acc_plot
 from util.Logginger import init_logger
 
 from util.model_util import save_model, load_model
-from util.score import score_predict
 import warnings
+
+from util.score import score_predict
 
 logger = init_logger("torch", logging_path=args.log_path)
 
@@ -113,7 +114,7 @@ def fit(model, training_iter, eval_iter, num_epoch, pbar, num_train_steps, verbo
 
             predict_tensor = predicts.cpu()
             label_tensor = label_ids.cpu()
-            precision, recall, f1 = score_predict(label_tensor, predict_tensor)
+            entity_precision, entity_recall, entity_f1 = score_predict(label_tensor, predict_tensor)
 
             label_ids = label_ids.view(1, -1).squeeze().cpu()
             predicts = predicts.view(1, -1).squeeze().cpu()
@@ -121,12 +122,14 @@ def fit(model, training_iter, eval_iter, num_epoch, pbar, num_train_steps, verbo
             predicts = predicts[predicts != -1]
 
             train_acc, f1 = model.acc_f1(predicts, label_ids)
-            pbar.show_process(train_acc, train_loss.item(), f1, precision, recall, f1, time.time() - start, step)
+            pbar.show_process(train_acc, train_loss.item(), f1, entity_precision, entity_recall, entity_f1,
+                              time.time() - start, step)
 
         # -----------------------验证----------------------------
         model.eval()
         count = 0
         y_predicts, y_labels = [], []
+        entity_predicts, entity_labels = [], []
         eval_loss, eval_acc, eval_f1 = 0, 0, 0
         with torch.no_grad():
             for step, batch in enumerate(eval_iter):
@@ -137,6 +140,9 @@ def fit(model, training_iter, eval_iter, num_epoch, pbar, num_train_steps, verbo
                 eval_loss = eval_los + eval_loss
                 count += 1
                 predicts = model.predict(bert_encode, output_mask)
+
+                entity_predicts.append(predicts.cpu())
+                entity_labels.append(label_ids.cpu())
 
                 label_ids = label_ids.view(1, -1).squeeze()
                 predicts = predicts.view(1, -1).squeeze()
@@ -149,17 +155,22 @@ def fit(model, training_iter, eval_iter, num_epoch, pbar, num_train_steps, verbo
             eval_predicted = torch.cat(y_predicts, dim=0).cpu()
             eval_labeled = torch.cat(y_labels, dim=0).cpu()
 
+            eval_entity_predict = torch.cat(entity_predicts, dim=0).cpu()
+            eva_entity_label = torch.cat(entity_labels, dim=0).cpu()
+
+            entity_precision, entity_recall, entity_f1 = score_predict(eva_entity_label, eval_entity_predict)
+
             eval_acc, eval_f1 = model.acc_f1(eval_predicted, eval_labeled)
             model.class_report(eval_predicted, eval_labeled)
 
             logger.info(
-                '\n\nEpoch %d - train_loss: %4f - eval_loss: %4f - train_acc:%4f - eval_acc:%4f - eval_f1:%4f\n'
+                '\n\nEpoch %d - train_loss: %4f - eval_loss: %4f - train_acc:%4f - eval_acc:%4f - eval_f1:%4f - ent_p:%4f - ent_r:%4f - ent_f1:%4f\n'
                 % (e + 1,
                    train_loss.item(),
                    eval_loss.item() / count,
                    train_acc,
                    eval_acc,
-                   eval_f1))
+                   eval_f1, entity_precision, entity_recall, entity_f1))
 
             # 保存最好的模型
             if eval_f1 > best_f1:

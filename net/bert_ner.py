@@ -4,12 +4,13 @@ import numpy as np
 from sklearn.metrics import f1_score, classification_report
 from pytorch_pretrained_bert.modeling import BertForTokenClassification
 import args
+from pytorch_pretrained_bert.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
 
 
 class Bert_CRF(nn.Module):
     def __init__(self):
         super(Bert_CRF, self).__init__()
-        self.bert = BertForTokenClassification.from_pretrained(args.bert_model, cache_dir=args.bert_cache,
+        self.bert = BertForTokenClassification.from_pretrained(args.bert_model, cache_dir=PYTORCH_PRETRAINED_BERT_CACHE,
                                                                num_labels=len(args.labels))
 
         self.crf = CRF(len(args.labels))

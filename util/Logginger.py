@@ -41,7 +41,7 @@ def init_logger(logger_name, logging_path):
         format_str = '[%(asctime)s]: %(name)s %(filename)s[line:%(lineno)s] %(levelname)s  %(message)s'
         formatter = logging.Formatter(format_str, datefmt)
         handler.setFormatter(formatter)
-        handler.setLevel(logging.INFO)
+        handler.setLevel(logging.ERROR)
         logger.addHandler(handler)
     logger = logging.getLogger(logger_name)
     return logger
