@@ -19,22 +19,20 @@ class doc:
         self.title = content[0]
         self.content = content[1:]
 
-    def result_str(self, parser: entity_extractor):
-        entity_cont = {}
-        title_entity = parser.extract(self.title)
-        content_entity = set()
-        for stc in self.content:
-            c_en = parser.extract(stc)
-            content_entity = content_entity | c_en
-        doc_entity = content_entity | title_entity
-        for entity in doc_entity:
-            if self.title.find(entity) > -1:
-                entity_cont[entity] = entity_cont.get(entity, 0) + 10
-            for stc in self.content:
-                if stc.find(entity) > -1:
-                    entity_cont[entity] = entity_cont.get(entity, 0) + 1
-        data = {'id': self.id, 'title_entity': list(title_entity), 'entity_cont': entity_cont}
-        return json.dumps(data)
+
+def make_submit(doc, parser: entity_extractor):
+    entity_cont = {}
+    title_entity = parser.extract([doc.title])
+    content_entity = parser.extract(doc.content)
+    doc_entity = content_entity | title_entity
+    for entity in doc_entity:
+        if doc.title.find(entity) > -1:
+            entity_cont[entity] = entity_cont.get(entity, 0) + 10
+        for stc in doc.content:
+            if stc.find(entity) > -1:
+                entity_cont[entity] = entity_cont.get(entity, 0) + 1
+    data = {'id': doc.id, 'title_entity': list(title_entity), 'entity_cont': entity_cont}
+    return json.dumps(data)
 
 
 def load_docs(data_file):
@@ -69,7 +67,7 @@ if __name__ == '__main__':
     doc_list = load_docs('data/coreEntityEmotion_test_stage1.txt')
     with open('output/entity_result.txt', 'w') as w:
         for ix, doc in enumerate(doc_list):
-            j = doc.result_str(ee)
+            j = make_submit(doc, ee)
             w.write(j + '\n')
             if ix % 100 == 0:
                 print(ix)
